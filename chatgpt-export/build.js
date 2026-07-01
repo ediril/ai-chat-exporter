@@ -39,7 +39,8 @@ const obfuscatorOptions = {
 
 // File to obfuscate
 const files = [
-  { input: 'html_bookmarklet.js', output: 'html_bookmarklet.js' }
+  { input: 'html_bookmarklet.js', output: 'html_bookmarklet.js' },
+  { input: 'markdown_bookmarklet.js', output: 'markdown_bookmarklet.js' }
 ];
 
 console.log('🔨 Building obfuscated bookmarklets...\n');

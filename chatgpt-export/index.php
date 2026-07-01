@@ -1,12 +1,13 @@
 <?php
 const CHATGPT_HTML_BOOKMARKLET_VERSION = '0.11.23.1';
+const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatGPT HTML Exporter</title>
+    <title>ChatGPT Exporter</title>
     <style>
         * {
             margin: 0;
@@ -296,8 +297,8 @@ const CHATGPT_HTML_BOOKMARKLET_VERSION = '0.11.23.1';
 <body>
     <div class="container">
         <div class="header">
-            <h1>ChatGPT HTML Exporter</h1>
-            <p>Export ChatGPT conversations to self-contained HTML files</p>
+            <h1>ChatGPT Exporter</h1>
+            <p>Export ChatGPT conversations to HTML or Markdown files</p>
         </div>
 
         <div class="content">
@@ -306,14 +307,19 @@ const CHATGPT_HTML_BOOKMARKLET_VERSION = '0.11.23.1';
                     <span class="step-number">1</span>
                     Install the Bookmarklet
                 </h2>
-                <p>Drag this button to your browser's bookmarks bar:</p>
+                <p>Drag a button to your browser's bookmarks bar:</p>
                 <br>
                 <?php
                 $bookmarkletHtmlCode = @file_get_contents(__DIR__ . '/dist/html_bookmarklet.js');
+                $bookmarkletMarkdownCode = @file_get_contents(__DIR__ . '/dist/markdown_bookmarklet.js');
                 ?>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletHtmlCode)); ?>" class="bookmarklet">
                     Export ChatGPT to HTML
                     <span class="bookmarklet-version">v<?php echo htmlspecialchars(CHATGPT_HTML_BOOKMARKLET_VERSION); ?></span>
+                </a>
+                <a href="<?php echo htmlspecialchars(trim($bookmarkletMarkdownCode)); ?>" class="bookmarklet">
+                    Export ChatGPT to Markdown
+                    <span class="bookmarklet-version">v<?php echo htmlspecialchars(CHATGPT_MARKDOWN_BOOKMARKLET_VERSION); ?></span>
                 </a>
             </div>
 
@@ -335,10 +341,10 @@ const CHATGPT_HTML_BOOKMARKLET_VERSION = '0.11.23.1';
                     <span class="step-number">3</span>
                     Save the Export
                 </h2>
-                <p>The bookmarklet downloads a self-contained <code>.html</code> file to your computer.</p>
+                <p>The bookmarklet downloads a self-contained <code>.html</code> file or a plain <code>.md</code> file to your computer.</p>
                 <ul style="margin: 15px 0; padding-left: 20px;">
-                    <li>Open the file locally in your browser</li>
-                    <li>Keep the export with embedded images, styling, and citations</li>
+                    <li>Open HTML exports locally in your browser</li>
+                    <li>Use Markdown exports in editors, notes apps, or documentation workflows</li>
                 </ul>
             </div>
 
