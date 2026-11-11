@@ -1,6 +1,3 @@
-<?php
-const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -313,7 +310,7 @@ const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
                 ?>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletMarkdownCode)); ?>" class="bookmarklet">
                     Export ChatGPT to Markdown
-                    <span class="bookmarklet-version">v<?php echo htmlspecialchars(CHATGPT_MARKDOWN_BOOKMARKLET_VERSION); ?></span>
+                    <span class="bookmarklet-version">v{{VERSION}}</span>
                 </a>
             </div>
 

@@ -1,6 +1,3 @@
-<?php
-const CLAUDE_MARKDOWN_BOOKMARKLET_VERSION = '0.5.24.3';
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -313,7 +310,7 @@ const CLAUDE_MARKDOWN_BOOKMARKLET_VERSION = '0.5.24.3';
                 ?>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletClaudeMarkdownCode)); ?>" class="bookmarklet">
                     Export Claude to Markdown
-                    <span class="bookmarklet-version">v<?php echo htmlspecialchars(CLAUDE_MARKDOWN_BOOKMARKLET_VERSION); ?></span>
+                    <span class="bookmarklet-version">v{{VERSION}}</span>
                 </a>
             </div>
 

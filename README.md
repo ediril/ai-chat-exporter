@@ -24,6 +24,10 @@ npm run build
 
 The build writes the obfuscated bookmarklets and a copy of `index.php` to that project's `dist/` directory. `dist/` holds everything the server needs, so deploy its contents. `index.php` loads the bookmarklets from its own folder, so it works only from `dist/`.
 
+### Versioning
+
+Each page's version is `<major>.<work-day>.<daily-commit>`, the format hlsync uses. The build computes it from Git and writes it into `dist/index.php` in place of `{{VERSION}}`. It starts from the version and commit in the project's `version.json`, then counts the first-parent commits that touch that project's folder: each new day with commits advances the work day, and the daily commit is the number of commits on the latest day. Commit before building, because uncommitted changes don't count.
+
 ### Files
 
 - `chatgpt-export/markdown_bookmarklet.js` - ChatGPT Markdown exporter source.

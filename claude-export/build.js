@@ -1,11 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');
+const gitVersion = require('../versioning');
 
 const distDir = path.join(__dirname, 'dist');
 fs.rmSync(distDir, { recursive: true, force: true });
 fs.mkdirSync(distDir);
-fs.copyFileSync(path.join(__dirname, 'index.php'), path.join(distDir, 'index.php'));
+const page = fs.readFileSync(path.join(__dirname, 'index.php'), 'utf8');
+fs.writeFileSync(path.join(distDir, 'index.php'), page.replace('{{VERSION}}', gitVersion(__dirname)));
 
 // Obfuscation options - optimized for bookmarklets
 const obfuscatorOptions = {
