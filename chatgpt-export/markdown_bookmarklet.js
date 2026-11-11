@@ -24,20 +24,16 @@ javascript:(function() {
       return;
     }
 
-    const turns = messageNodes.map(function(messageNode) {
+    const blocks = messageNodes.map(function(messageNode) {
       const isUser = messageNode.hasAttribute('data-user-message-bubble');
       const clone = messageNode.cloneNode(true);
       cleanupExportFragment(clone);
 
-      return {
-        role: isUser ? 'User' : 'ChatGPT',
-        markdown: cleanChatGptMarkdown(nodeToMarkdown(clone, { preserveWhitespace: isUser })).trim()
-      };
-    }).filter(function(turn) {
-      return turn.markdown;
-    });
+      const markdown = cleanChatGptMarkdown(nodeToMarkdown(clone, { preserveWhitespace: isUser })).trim();
+      return markdown && isUser ? quote(markdown) : markdown;
+    }).filter(Boolean);
 
-    if (!turns.length) {
+    if (!blocks.length) {
       alert('No exportable ChatGPT message content found.');
       return;
     }
@@ -53,9 +49,7 @@ javascript:(function() {
       '',
       'Exported: ' + new Date().toLocaleString(),
       '',
-      turns.map(function(turn) {
-        return '## ' + turn.role + '\n\n' + turn.markdown;
-      }).join('\n\n---\n\n')
+      blocks.join('\n\n')
     ].join('\n');
 
     const filenameBase = filenameFromTitle(title);
@@ -207,12 +201,7 @@ javascript:(function() {
     }
 
     if (tag === 'blockquote') {
-      return '\n\n' + childrenToMarkdown(node, context).trim()
-        .split('\n')
-        .map(function(line) {
-          return line.trim() ? '> ' + line : '>';
-        })
-        .join('\n') + '\n\n';
+      return '\n\n' + quote(childrenToMarkdown(node, context).trim()) + '\n\n';
     }
 
     if (tag === 'ul' || tag === 'ol') {
@@ -239,6 +228,12 @@ javascript:(function() {
     }
 
     return childrenToMarkdown(node, context);
+  }
+
+  function quote(text) {
+    return text.split('\n').map(function(line) {
+      return line.trim() ? '> ' + line : '>';
+    }).join('\n');
   }
 
   function childrenToMarkdown(node, context) {
