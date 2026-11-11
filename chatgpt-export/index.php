@@ -1,5 +1,4 @@
 <?php
-const CHATGPT_HTML_BOOKMARKLET_VERSION = '0.11.23.1';
 const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
 ?>
 <!DOCTYPE html>
@@ -298,7 +297,7 @@ const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
     <div class="container">
         <div class="header">
             <h1>ChatGPT Exporter</h1>
-            <p>Export ChatGPT conversations to HTML or Markdown files</p>
+            <p>Export ChatGPT conversations to Markdown files</p>
         </div>
 
         <div class="content">
@@ -307,16 +306,11 @@ const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
                     <span class="step-number">1</span>
                     Install the Bookmarklet
                 </h2>
-                <p>Drag a button to your browser's bookmarks bar:</p>
+                <p>Drag this button to your browser's bookmarks bar:</p>
                 <br>
                 <?php
-                $bookmarkletHtmlCode = @file_get_contents(__DIR__ . '/html_bookmarklet.js');
                 $bookmarkletMarkdownCode = @file_get_contents(__DIR__ . '/markdown_bookmarklet.js');
                 ?>
-                <a href="<?php echo htmlspecialchars(trim($bookmarkletHtmlCode)); ?>" class="bookmarklet">
-                    Export ChatGPT to HTML
-                    <span class="bookmarklet-version">v<?php echo htmlspecialchars(CHATGPT_HTML_BOOKMARKLET_VERSION); ?></span>
-                </a>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletMarkdownCode)); ?>" class="bookmarklet">
                     Export ChatGPT to Markdown
                     <span class="bookmarklet-version">v<?php echo htmlspecialchars(CHATGPT_MARKDOWN_BOOKMARKLET_VERSION); ?></span>
@@ -341,11 +335,7 @@ const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
                     <span class="step-number">3</span>
                     Save the Export
                 </h2>
-                <p>The bookmarklet downloads a self-contained <code>.html</code> file or a plain <code>.md</code> file to your computer.</p>
-                <ul style="margin: 15px 0; padding-left: 20px;">
-                    <li>Open HTML exports locally in your browser</li>
-                    <li>Use Markdown exports in editors, notes apps, or documentation workflows</li>
-                </ul>
+                <p>The bookmarklet downloads a plain <code>.md</code> file to your computer. Use it in editors, notes apps, or documentation workflows.</p>
             </div>
 
             <div class="warning">

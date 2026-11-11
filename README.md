@@ -2,7 +2,7 @@
 
 Two bookmarklet exporters, deployed as separate pages:
 
-- `chatgpt-export/` exports ChatGPT conversations as self-contained HTML files.
+- `chatgpt-export/` exports ChatGPT conversations as Markdown files.
 - `claude-export/` exports Claude conversations as Markdown files.
 
 ## Development
@@ -26,7 +26,7 @@ The build writes the obfuscated bookmarklets and a copy of `index.php` to that p
 
 ### Files
 
-- `chatgpt-export/html_bookmarklet.js` - ChatGPT HTML exporter source.
+- `chatgpt-export/markdown_bookmarklet.js` - ChatGPT Markdown exporter source.
 - `claude-export/claude_markdown_bookmarklet.js` - Claude Markdown exporter source.
 - `*/build.js` - Project-local build script for obfuscation.
 - `*/index.php` - Project-local install page.

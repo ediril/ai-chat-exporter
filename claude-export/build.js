@@ -3,7 +3,8 @@ const path = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 
 const distDir = path.join(__dirname, 'dist');
-fs.mkdirSync(distDir, { recursive: true });
+fs.rmSync(distDir, { recursive: true, force: true });
+fs.mkdirSync(distDir);
 fs.copyFileSync(path.join(__dirname, 'index.php'), path.join(distDir, 'index.php'));
 
 // Obfuscation options - optimized for bookmarklets

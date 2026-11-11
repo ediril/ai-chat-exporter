@@ -17,10 +17,7 @@ javascript:(function() {
       return;
     }
 
-    const messageNodes = Array.from(main.querySelectorAll('[data-message-author-role]')).filter(function(node) {
-      const role = node.getAttribute('data-message-author-role');
-      return role === 'user' || role === 'assistant';
-    });
+    const messageNodes = Array.from(main.querySelectorAll('[data-user-message-bubble], [data-dil-response]'));
 
     if (!messageNodes.length) {
       alert('ChatGPT messages were not found. The page structure may have changed.');
@@ -28,13 +25,13 @@ javascript:(function() {
     }
 
     const turns = messageNodes.map(function(messageNode) {
-      const role = messageNode.getAttribute('data-message-author-role') === 'user' ? 'User' : 'ChatGPT';
+      const isUser = messageNode.hasAttribute('data-user-message-bubble');
       const clone = messageNode.cloneNode(true);
       cleanupExportFragment(clone);
 
       return {
-        role: role,
-        markdown: cleanChatGptMarkdown(nodeToMarkdown(clone)).trim()
+        role: isUser ? 'User' : 'ChatGPT',
+        markdown: cleanChatGptMarkdown(nodeToMarkdown(clone, { preserveWhitespace: isUser })).trim()
       };
     }).filter(function(turn) {
       return turn.markdown;
@@ -103,7 +100,7 @@ javascript:(function() {
   function cleanupExportFragment(fragment) {
     fragment.querySelectorAll([
       'button',
-      '[role="button"]',
+      '[data-pill]',
       '[role="menu"]',
       '[role="menubar"]',
       '[role="toolbar"]',
@@ -126,7 +123,6 @@ javascript:(function() {
   function cleanChatGptMarkdown(markdown) {
     return markdown
       .replace(/\r\n/g, '\n')
-      .replace(/^\s*(You said:|You:|ChatGPT said:)\s*/i, '')
       .replace(/\n{3,}/g, '\n\n')
       .trim();
   }
@@ -139,7 +135,7 @@ javascript:(function() {
     }
 
     if (node.nodeType === Node.TEXT_NODE) {
-      return node.textContent.replace(/\s+/g, ' ');
+      return context.preserveWhitespace ? node.textContent : node.textContent.replace(/\s+/g, ' ');
     }
 
     if (node.nodeType !== Node.ELEMENT_NODE) {
@@ -158,7 +154,7 @@ javascript:(function() {
 
     if (
       node.getAttribute('contenteditable') === 'true' ||
-      ['button', 'menu', 'menubar', 'toolbar', 'textbox'].includes(node.getAttribute('role'))
+      ['menu', 'menubar', 'toolbar', 'textbox'].includes(node.getAttribute('role'))
     ) {
       return '';
     }
@@ -186,24 +182,27 @@ javascript:(function() {
 
     if (tag === 'img') {
       const src = node.currentSrc || node.src || node.getAttribute('src') || '';
-      const alt = node.alt || 'image';
+      const alt = node.alt.replace(/\s+/g, ' ').trim() || 'image';
       return src ? '\n\n![' + alt.replace(/\]/g, '\\]') + '](' + cleanUrl(src) + ')\n\n' : '';
     }
 
     if (/^h[1-6]$/.test(tag)) {
-      const level = Number(tag.slice(1));
-      return '\n\n' + '#'.repeat(level) + ' ' + childrenToMarkdown(node, context).trim() + '\n\n';
+      const text = childrenToMarkdown(node, context).trim();
+      if (node.closest('[data-d-component="grid"]')) {
+        return '\n\n**' + text + '**\n\n';
+      }
+      return '\n\n' + '#'.repeat(Number(tag.slice(1))) + ' ' + text + '\n\n';
     }
 
     if (tag === 'p') {
       return '\n\n' + childrenToMarkdown(node, context).trim() + '\n\n';
     }
 
-    if (tag === 'strong' || tag === 'b') {
+    if (tag === 'strong' || tag === 'b' || node.hasAttribute('data-d-default-strong')) {
       return '**' + childrenToMarkdown(node, context).trim() + '**';
     }
 
-    if (tag === 'em' || tag === 'i') {
+    if (tag === 'em' || tag === 'i' || node.getAttribute('data-d-font-style') === 'italic') {
       return '*' + childrenToMarkdown(node, context).trim() + '*';
     }
 
