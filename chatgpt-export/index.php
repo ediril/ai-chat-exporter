@@ -310,8 +310,8 @@ const CHATGPT_MARKDOWN_BOOKMARKLET_VERSION = '0.7.1.1';
                 <p>Drag a button to your browser's bookmarks bar:</p>
                 <br>
                 <?php
-                $bookmarkletHtmlCode = @file_get_contents(__DIR__ . '/dist/html_bookmarklet.js');
-                $bookmarkletMarkdownCode = @file_get_contents(__DIR__ . '/dist/markdown_bookmarklet.js');
+                $bookmarkletHtmlCode = @file_get_contents(__DIR__ . '/html_bookmarklet.js');
+                $bookmarkletMarkdownCode = @file_get_contents(__DIR__ . '/markdown_bookmarklet.js');
                 ?>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletHtmlCode)); ?>" class="bookmarklet">
                     Export ChatGPT to HTML

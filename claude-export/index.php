@@ -309,7 +309,7 @@ const CLAUDE_MARKDOWN_BOOKMARKLET_VERSION = '0.5.24.3';
                 <p>Drag this button to your browser's bookmarks bar:</p>
                 <br>
                 <?php
-                $bookmarkletClaudeMarkdownCode = @file_get_contents(__DIR__ . '/dist/claude_markdown_bookmarklet.js');
+                $bookmarkletClaudeMarkdownCode = @file_get_contents(__DIR__ . '/claude_markdown_bookmarklet.js');
                 ?>
                 <a href="<?php echo htmlspecialchars(trim($bookmarkletClaudeMarkdownCode)); ?>" class="bookmarklet">
                     Export Claude to Markdown

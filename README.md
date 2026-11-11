@@ -22,7 +22,7 @@ Each project uses obfuscated JavaScript for its production bookmarklet. Build ea
 npm run build
 ```
 
-The build reads the source bookmarklet from the project folder and writes the obfuscated version to that project's `dist/` directory. Each `index.php` loads its own generated file from `dist/`.
+The build writes the obfuscated bookmarklets and a copy of `index.php` to that project's `dist/` directory. `dist/` holds everything the server needs, so deploy its contents. `index.php` loads the bookmarklets from its own folder, so it works only from `dist/`.
 
 ### Files
 

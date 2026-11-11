@@ -2,11 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');
 
-// Create dist directory if it doesn't exist
 const distDir = path.join(__dirname, 'dist');
-if (!fs.existsSync(distDir)) {
-  fs.mkdirSync(distDir);
-}
+fs.mkdirSync(distDir, { recursive: true });
+fs.copyFileSync(path.join(__dirname, 'index.php'), path.join(distDir, 'index.php'));
 
 // Obfuscation options - optimized for bookmarklets
 const obfuscatorOptions = {
