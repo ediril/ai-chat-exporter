@@ -141,9 +141,14 @@ javascript:(async function() {
       const text = dil && typeof dil.fallbackMarkdown === 'string'
         ? tidyFallbackMarkdown(dil.fallbackMarkdown)
         : content.parts.filter(function(part) { return typeof part === 'string'; }).join('');
-      const images = imagesByQuery(dil);
+      const reply = {
+        sources: sources,
+        problems: problems,
+        references: referencesByMarker(metadata),
+        images: imagesByQuery(dil)
+      };
       return normalize(inlineSvg(text).replace(MARKER, function(match, space, body) {
-        const rendered = renderMarker(body.split(SEP), sources, images, problems);
+        const rendered = renderMarker(body, reply);
         return rendered ? space + rendered : '';
       }));
     }
@@ -151,12 +156,17 @@ javascript:(async function() {
     return '';
   }
 
-  function renderMarker(fields, sources, images, problems) {
+  function renderMarker(body, reply) {
+    const fields = body.split(SEP);
     const type = fields[0];
     const args = fields.slice(1);
+    const reference = reply.references[OPEN + body + CLOSE];
 
+    if (reference && reference.type === 'hidden') {
+      return '';
+    }
     if (type === 'cite') {
-      return citation(args, sources, problems);
+      return citation(args, reply.sources, reply.problems);
     }
     if (type === 'entity') {
       const name = entityName(args[0]);
@@ -168,7 +178,7 @@ javascript:(async function() {
       return '[' + (args[0] || args[1]).replace(/[\[\]]/g, '') + '](' + cleanUrl(args[1]) + ')';
     }
     if (type === 'image_group') {
-      return imageGroup(args[0], images, problems);
+      return imageGroup(groupImages(args[0], reference, reply.images), reply.problems);
     }
     if (type === 'genui') {
       const table = chartTable(args[0]);
@@ -177,8 +187,18 @@ javascript:(async function() {
       }
     }
 
-    problems.unknownMarkers.add(type);
+    reply.problems.unknownMarkers.add(type);
     return '';
+  }
+
+  function referencesByMarker(metadata) {
+    const references = {};
+    (Array.isArray(metadata.content_references) ? metadata.content_references : []).forEach(function(reference) {
+      if (reference && reference.matched_text) {
+        references[reference.matched_text] = reference;
+      }
+    });
+    return references;
   }
 
   function entityName(json) {
@@ -190,8 +210,7 @@ javascript:(async function() {
     }
   }
 
-  // Image searches ChatGPT ran for this reply, keyed by query. An image_group marker
-  // names its queries; the images themselves live in the reply's component results.
+  // Image searches ChatGPT ran for this reply, keyed by query, from the reply's component results.
   function imagesByQuery(dil) {
     const images = {};
     try {
@@ -206,26 +225,37 @@ javascript:(async function() {
     return images;
   }
 
-  function imageGroup(json, images, problems) {
+  // Older chats list an image_group's images in a content reference for the marker. Newer chats
+  // name image-search queries in the marker, answered in the reply's component results.
+  function groupImages(json, reference, images) {
+    if (reference && Array.isArray(reference.images)) {
+      return reference.images.map(function(entry) { return entry && entry.image_result; }).filter(Boolean);
+    }
     let group = {};
     try {
       group = JSON.parse(json);
     } catch (error) {
       group = {};
     }
-    const markdown = [];
+    const found = [];
     (Array.isArray(group.query) ? group.query : []).forEach(function(query) {
-      (images[query] || []).slice(0, group.num_per_query || undefined).forEach(function(image) {
-        const src = image.content_url || image.original_content_url;
-        if (!src) {
-          return;
-        }
-        const picture = '![' + (image.title || 'image').replace(/[\[\]\s]+/g, ' ').trim() + '](' + src + ')';
-        const item = image.url ? '[' + picture + '](' + cleanUrl(image.url) + ')' : picture;
-        if (!markdown.includes(item)) {
-          markdown.push(item);
-        }
-      });
+      found.push.apply(found, (images[query] || []).slice(0, group.num_per_query || undefined));
+    });
+    return found;
+  }
+
+  function imageGroup(images, problems) {
+    const markdown = [];
+    images.forEach(function(image) {
+      const src = image.content_url || image.original_content_url;
+      if (!src) {
+        return;
+      }
+      const picture = '![' + (image.title || 'image').replace(/[\[\]\s]+/g, ' ').trim() + '](' + src + ')';
+      const item = image.url ? '[' + picture + '](' + cleanUrl(image.url) + ')' : picture;
+      if (!markdown.includes(item)) {
+        markdown.push(item);
+      }
     });
     if (!markdown.length) {
       problems.missingImages++;
