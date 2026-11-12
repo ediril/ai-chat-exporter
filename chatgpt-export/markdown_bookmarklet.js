@@ -138,7 +138,7 @@ javascript:(async function() {
       const text = dil && typeof dil.fallbackMarkdown === 'string'
         ? unescapeMarkdown(dil.fallbackMarkdown)
         : content.parts.filter(function(part) { return typeof part === 'string'; }).join('');
-      return normalize(text.replace(MARKER, function(match, space, body) {
+      return normalize(inlineSvg(text).replace(MARKER, function(match, space, body) {
         const rendered = renderMarker(body.split(SEP), sources, problems);
         return rendered ? space + rendered : '';
       }));
@@ -215,6 +215,14 @@ javascript:(async function() {
     }).join('');
   }
 
+  // ChatGPT draws ```svg blocks as diagrams. Unfence them so Markdown editors that render
+  // HTML show the diagram; a blank line inside would end the HTML block early.
+  function inlineSvg(text) {
+    return text.replace(/```svg\n(<svg[\s\S]*?<\/svg>)\s*\n```/g, function(match, svg) {
+      return svg.replace(/\n\s*\n/g, '\n');
+    });
+  }
+
   function normalize(text) {
     return text
       .replace(/\r\n/g, '\n')
@@ -257,7 +265,7 @@ javascript:(async function() {
       const url = new URL(value);
       const toRemove = [];
       url.searchParams.forEach(function(v, k) {
-        if (/^utm_|^fbclid|^gclid|^msclkid|^mc_|^_ga|^ref$|^referrer$|^source$|^campaign/i.test(k)) {
+        if (/^utm_|^fbclid|^gclid|^msclkid|^mc_|^_ga|^trk$|^ref$|^referrer$|^source$|^campaign/i.test(k)) {
           toRemove.push(k);
         }
       });
