@@ -29,7 +29,7 @@ javascript:(async function() {
     return;
   }
 
-  const problems = { sourcesUnavailable: false, unlinkedCitations: 0, unknownMarkers: new Set() };
+  const problems = { sourcesUnavailable: false, unlinkedCitations: 0, missingImages: 0, unknownMarkers: new Set() };
   let sources = {};
   try {
     sources = collectSources(data);
@@ -69,6 +69,9 @@ javascript:(async function() {
   }
   if (problems.unlinkedCitations) {
     notes.push(problems.unlinkedCitations + ' citation(s) had no matching source and were left out.');
+  }
+  if (problems.missingImages) {
+    notes.push(problems.missingImages + ' image group(s) had no images available and were left out.');
   }
   if (problems.unknownMarkers.size) {
     notes.push('Unrecognized ChatGPT elements were left out: ' + Array.from(problems.unknownMarkers).join(', ') + '.');
@@ -138,8 +141,9 @@ javascript:(async function() {
       const text = dil && typeof dil.fallbackMarkdown === 'string'
         ? unescapeMarkdown(dil.fallbackMarkdown)
         : content.parts.filter(function(part) { return typeof part === 'string'; }).join('');
+      const images = imagesByQuery(dil);
       return normalize(inlineSvg(text).replace(MARKER, function(match, space, body) {
-        const rendered = renderMarker(body.split(SEP), sources, problems);
+        const rendered = renderMarker(body.split(SEP), sources, images, problems);
         return rendered ? space + rendered : '';
       }));
     }
@@ -147,7 +151,7 @@ javascript:(async function() {
     return '';
   }
 
-  function renderMarker(fields, sources, problems) {
+  function renderMarker(fields, sources, images, problems) {
     const type = fields[0];
     const args = fields.slice(1);
 
@@ -164,7 +168,13 @@ javascript:(async function() {
       return '[' + (args[0] || args[1]).replace(/[\[\]]/g, '') + '](' + cleanUrl(args[1]) + ')';
     }
     if (type === 'image_group') {
-      return '';
+      return imageGroup(args[0], images, problems);
+    }
+    if (type === 'genui') {
+      const table = chartTable(args[0]);
+      if (table) {
+        return table;
+      }
     }
 
     problems.unknownMarkers.add(type);
@@ -175,6 +185,76 @@ javascript:(async function() {
     try {
       const name = JSON.parse(json)[1];
       return typeof name === 'string' ? name : '';
+    } catch (error) {
+      return '';
+    }
+  }
+
+  // Image searches ChatGPT ran for this reply, keyed by query. An image_group marker
+  // names its queries; the images themselves live in the reply's component results.
+  function imagesByQuery(dil) {
+    const images = {};
+    try {
+      Object.values(dil.appData.opGenui.componentResults).forEach(function(component) {
+        ((component.state && component.state.images) || []).forEach(function(image) {
+          (images[image.image_search_query] = images[image.image_search_query] || []).push(image);
+        });
+      });
+    } catch (error) {
+      return {};
+    }
+    return images;
+  }
+
+  function imageGroup(json, images, problems) {
+    let group = {};
+    try {
+      group = JSON.parse(json);
+    } catch (error) {
+      group = {};
+    }
+    const markdown = [];
+    (Array.isArray(group.query) ? group.query : []).forEach(function(query) {
+      (images[query] || []).slice(0, group.num_per_query || undefined).forEach(function(image) {
+        const src = image.content_url || image.original_content_url;
+        if (!src) {
+          return;
+        }
+        const picture = '![' + (image.title || 'image').replace(/[\[\]\s]+/g, ' ').trim() + '](' + src + ')';
+        const item = image.url ? '[' + picture + '](' + cleanUrl(image.url) + ')' : picture;
+        if (!markdown.includes(item)) {
+          markdown.push(item);
+        }
+      });
+    });
+    if (!markdown.length) {
+      problems.missingImages++;
+      return '';
+    }
+    return '\n\n' + markdown.join('\n\n') + '\n\n';
+  }
+
+  // A chart becomes a Markdown table of its data, captioned with the chart's title and footer.
+  function chartTable(json) {
+    try {
+      const chart = JSON.parse(json).charts_widget_v2.content;
+      const columns = [{ key: chart.xKey, label: chart.xKey.charAt(0).toUpperCase() + chart.xKey.slice(1) }]
+        .concat(chart.series.map(function(series) {
+          return { key: series.dataKey, label: series.label || series.dataKey };
+        }));
+      const row = function(cells) {
+        return '| ' + cells.map(function(cell) { return String(cell).replace(/\|/g, '\\|'); }).join(' | ') + ' |';
+      };
+      const table = [row(columns.map(function(column) { return column.label; })), row(columns.map(function() { return '---'; }))]
+        .concat(chart.data.map(function(item) {
+          return row(columns.map(function(column) { return item[column.key] === undefined ? '' : item[column.key]; }));
+        }));
+      const meta = chart.meta || {};
+      return '\n\n' +
+        (typeof meta.title === 'string' ? '**' + meta.title + '**\n\n' : '') +
+        table.join('\n') +
+        (typeof meta.footer === 'string' ? '\n\n*' + meta.footer + '*' : '') +
+        '\n\n';
     } catch (error) {
       return '';
     }
@@ -209,6 +289,7 @@ javascript:(async function() {
       return part
         .replace(/\\:/g, ':')
         .replace(/\\!(?!\[)/g, '!')
+        .replace(/\\\+(?! )/g, '+')
         .replace(/(^[ \t]*\d+)?\\\./gm, function(match, listNumber) {
           return listNumber ? match : '.';
         });
