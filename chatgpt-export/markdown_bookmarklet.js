@@ -29,7 +29,13 @@ javascript:(async function() {
     return;
   }
 
-  const problems = { sourcesUnavailable: false, unlinkedCitations: 0, missingImages: 0, unknownMarkers: new Set() };
+  const problems = {
+    sourcesUnavailable: false,
+    unlinkedCitations: 0,
+    missingImages: 0,
+    unknownMarkers: new Set(),
+    unknownMessageTypes: new Set()
+  };
   let sources = {};
   try {
     sources = collectSources(data);
@@ -52,17 +58,6 @@ javascript:(async function() {
     return;
   }
 
-  const title = (data.title || 'ChatGPT conversation').trim();
-  const markdown = [
-    '# ' + title,
-    '',
-    'Exported: ' + new Date().toLocaleString(),
-    '',
-    blocks.join('\n\n')
-  ].join('\n') + '\n';
-
-  downloadMarkdown(markdown, (filenameFromTitle(title) || 'ChatGPT conversation') + '.md');
-
   const notes = [];
   if (problems.sourcesUnavailable) {
     notes.push('Source links could not be read, so citations were left out.');
@@ -76,9 +71,27 @@ javascript:(async function() {
   if (problems.unknownMarkers.size) {
     notes.push('Unrecognized ChatGPT elements were left out: ' + Array.from(problems.unknownMarkers).join(', ') + '.');
   }
-  if (notes.length) {
-    alert('Exported with omissions:\n\n' + notes.join('\n'));
+  if (problems.unknownMessageTypes.size) {
+    notes.push('Replies of unrecognized types were left out: ' + Array.from(problems.unknownMessageTypes).join(', ') + '.');
   }
+
+  // Notes are recorded in the file and announced before the download starts:
+  // an alert fired after the download began never appeared in Chrome.
+  if (notes.length) {
+    alert('Exported with omissions (the exporter needs updating):\n\n' + notes.join('\n'));
+  }
+
+  const title = (data.title || 'ChatGPT conversation').trim();
+  const markdown = [
+    '# ' + title,
+    '',
+    'Exported: ' + new Date().toLocaleString(),
+    '',
+    notes.length ? '**Export notes** (the exporter needs updating):\n\n' + notes.map(function(note) { return '- ' + note; }).join('\n') + '\n' : null,
+    blocks.join('\n\n')
+  ].filter(function(part) { return part !== null; }).join('\n') + '\n';
+
+  downloadMarkdown(markdown, (filenameFromTitle(title) || 'ChatGPT conversation') + '.md');
 
   async function fetchJson(url, options) {
     const response = await fetch(url, options);
@@ -125,9 +138,14 @@ javascript:(async function() {
     }
 
     if (message.author.role === 'user' && ['text', 'multimodal_text'].includes(content.content_type)) {
-      const text = content.parts.map(function(part) {
-        return typeof part === 'string' ? part : '[attachment]';
-      }).join('\n\n');
+      const attachments = (Array.isArray(metadata.attachments) ? metadata.attachments : [])
+        .map(function(attachment) { return attachment && attachment.name; })
+        .filter(Boolean);
+      const text = attachments.map(function(name) { return '*Attached: ' + name + '*'; })
+        .concat(content.parts.map(function(part) {
+          return typeof part === 'string' ? part : (attachments.length ? '' : '[attachment]');
+        }))
+        .join('\n\n');
       return text.trim() ? quote(normalize(text)) : '';
     }
 
@@ -153,6 +171,13 @@ javascript:(async function() {
       }));
     }
 
+    if (
+      message.author.role === 'assistant' &&
+      message.recipient === 'all' &&
+      !['text', 'reasoning_recap', 'thoughts'].includes(content.content_type)
+    ) {
+      problems.unknownMessageTypes.add(content.content_type);
+    }
     return '';
   }
 
@@ -167,6 +192,13 @@ javascript:(async function() {
     }
     if (type === 'cite') {
       return citation(args, reply.sources, reply.problems);
+    }
+    if (type === 'filecite') {
+      if (reference && reference.name) {
+        return '(' + reference.name + ')';
+      }
+      reply.problems.unlinkedCitations++;
+      return '';
     }
     if (type === 'entity') {
       const name = entityName(args[0]);
