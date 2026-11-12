@@ -139,7 +139,7 @@ javascript:(async function() {
     ) {
       const dil = metadata.model_dil_v2;
       const text = dil && typeof dil.fallbackMarkdown === 'string'
-        ? unescapeMarkdown(dil.fallbackMarkdown)
+        ? tidyFallbackMarkdown(dil.fallbackMarkdown)
         : content.parts.filter(function(part) { return typeof part === 'string'; }).join('');
       const images = imagesByQuery(dil);
       return normalize(inlineSvg(text).replace(MARKER, function(match, space, body) {
@@ -279,9 +279,10 @@ javascript:(async function() {
     return links.length ? '(' + links.join(', ') + ')' : '';
   }
 
-  // ChatGPT's fallback Markdown backslash-escapes ordinary punctuation. Remove the escapes
-  // that cannot change the rendering, leaving code and math (where \: \! \. are LaTeX) alone.
-  function unescapeMarkdown(text) {
+  // ChatGPT's fallback Markdown backslash-escapes ordinary punctuation and turns the big numbers
+  // in styled cards into headings (# 1,284). Remove the escapes that cannot change the rendering
+  // and make wordless headings bold, leaving code and math (where \: \! \. are LaTeX) alone.
+  function tidyFallbackMarkdown(text) {
     return text.split(/(```[\s\S]*?```|`[^`\n]*`|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$\$[\s\S]*?\$\$)/).map(function(part, index) {
       if (index % 2) {
         return part;
@@ -292,7 +293,8 @@ javascript:(async function() {
         .replace(/\\\+(?! )/g, '+')
         .replace(/(^[ \t]*\d+)?\\\./gm, function(match, listNumber) {
           return listNumber ? match : '.';
-        });
+        })
+        .replace(/^#{1,6}[ \t]+([^\p{L}\n]*[^\p{L}\s])[ \t]*$/gmu, '**$1**');
     }).join('');
   }
 
