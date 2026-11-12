@@ -244,24 +244,35 @@ javascript:(async function() {
     return found;
   }
 
+  // Images point at the file "Save image as" would create next to the Markdown file, and link
+  // to the hosted copy, so a reader can click through until (or instead of) saving the image.
   function imageGroup(images, problems) {
     const markdown = [];
     images.forEach(function(image) {
-      const src = image.content_url || image.original_content_url;
-      if (!src) {
+      const remote = image.content_url || image.original_content_url;
+      const local = remote && savedImageName(remote);
+      if (!local) {
         return;
       }
-      const picture = '![' + (image.title || 'image').replace(/[\[\]\s]+/g, ' ').trim() + '](' + src + ')';
-      const item = image.url ? '[' + picture + '](' + cleanUrl(image.url) + ')' : picture;
-      if (!markdown.includes(item)) {
-        markdown.push(item);
-      }
+      const alt = (image.title || 'image').replace(/[\[\]\s]+/g, ' ').trim();
+      const source = image.url ? ' "Source: ' + cleanUrl(image.url).replace(/"/g, '%22') + '"' : '';
+      markdown.push('[![' + alt + '](' + (/[\s()<>]/.test(local) ? '<' + local + '>' : local) + ')](' + remote + source + ')');
     });
     if (!markdown.length) {
       problems.missingImages++;
       return '';
     }
     return '\n\n' + markdown.join('\n\n') + '\n\n';
+  }
+
+  // ChatGPT's image host serves extensionless JPEGs, which Chrome saves with a .jpeg extension.
+  function savedImageName(url) {
+    try {
+      const name = decodeURIComponent(new URL(url).pathname.split('/').pop());
+      return /\.[a-z0-9]{2,5}$/i.test(name) ? name : name + '.jpeg';
+    } catch (error) {
+      return '';
+    }
   }
 
   // A chart becomes a Markdown table of its data, captioned with the chart's title and footer.
